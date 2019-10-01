@@ -1,3 +1,32 @@
+const topic = require('./lib/topic');
+const author = require('./lib/author');
+const bodyParser = require('body-parser');
+const express = require('express');
+const app = express();
+const comperssion = require('compression');
+
+app.use(bodyParser.urlencoded({extended:false}));
+app.use(comperssion());
+
+// route, routing
+app.get('/', (request, response) => topic.home(request, response));
+
+app.get('/page/:pageId', (request, response) => topic.page(request, response));
+
+app.get('/create', (request, response) => topic.create(request, response));
+
+app.post('/create_process', (request, response) => topic.create_process(request, response));
+
+app.get('/update/:topicId', (request, response) => topic.update(request, response));
+
+app.post('/update_process', (request, response) => topic.update_process(request, response));
+
+app.post('/delete_process', (request, response) => topic.delete_process(request, response));
+
+app.listen(3000, () => console.log(`Example app listening on port 3000!`));
+
+
+/*
 var http = require('http');
 var topic = require('./lib/topic');
 var url = require('url');
@@ -39,3 +68,5 @@ var app = http.createServer(function(request,response){
     }
 });
 app.listen(3000);
+
+*/
