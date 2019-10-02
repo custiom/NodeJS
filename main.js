@@ -4,9 +4,16 @@ const bodyParser = require('body-parser');
 const express = require('express');
 const app = express();
 const comperssion = require('compression');
+const db = require('./lib/db');
 
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(comperssion());
+app.get('*', function(request, response, next){
+  db.query(`SELECT * FROM topic`, function(error, topics){
+    request.list = topics;
+    next();
+  });
+});
 
 // route, routing
 app.get('/', (request, response) => topic.home(request, response));
