@@ -23,7 +23,8 @@ router.get('/create', (request, response) => {
           </p>
         </form>
       `,
-      ``
+      ``,
+      request.authStatusUI
     );
     response.send(html);
   });        
@@ -31,6 +32,10 @@ router.get('/create', (request, response) => {
 
 router.post('/create_process', (request, response) => {
   var post = request.body;
+  if(!request.isOwner){
+    response.end('Login required!!');
+    return false;
+  }
   db.query(`
       INSERT INTO topic (title, description, created, author_id)
         VALUES(?, ?, NOW(), ?)`,
@@ -46,6 +51,10 @@ router.post('/create_process', (request, response) => {
 
 router.post('/update_process', (request, response) => {
   var post = request.body;
+  if(!request.isOwner){
+    response.end('Login required!!');
+    return false;
+  }
   db.query(`UPDATE topic SET title=?, description=?, author_id=? WHERE id = ?`, [post.title, post.description, post.author, post.id], function(error, result){
     response.redirect(302, `/topic/${post.id}`);
   });  
@@ -53,6 +62,10 @@ router.post('/update_process', (request, response) => {
 
 router.post('/delete_process', (request, response) => {
   var post = request.body;
+  if(!request.isOwner){
+    response.end('Login required!!');
+    return false;
+  }
   db.query(`DELETE FROM topic WHERE id = ?`, post.id, function(error, result){
     if(error){
       throw error;
@@ -85,7 +98,8 @@ router.get('/update/:topicId', (request, response) => {
             <input type="submit">
           </p>
         </form>`,
-        `<a href="/create">create</a> <a href="/topic/update/${topic[0].id}">update</a>`
+        `<a href="/create">create</a> <a href="/topic/update/${topic[0].id}">update</a>`,
+        request.authStatusUI
       );
       response.send(html);
       });
@@ -112,7 +126,8 @@ router.get('/:pageId', (request, response) => {
         <form action = "/topic/delete_process" method ="post">
         <input type ="hidden" name = "id" value="${request.params.pageId}">
         <input type="submit" value = "delete">
-        </form>`
+        </form>`,
+      request.authStatusUI
     );
     response.send(html);
   });  

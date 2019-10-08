@@ -9,9 +9,11 @@ router.get('/', (request, response) => {
     var list = template.list(request.list);
     var html = template.html(title, list,
         `<h2>${title}</h2>${description}`,
-        `<a href="/topic/create">create</a>`
+        `<a href="/topic/create">create</a>`,
+        request.authStatusUI
     );
     response.send(html);  
 });
+
 
 module.exports = router;
