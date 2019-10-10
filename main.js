@@ -5,11 +5,14 @@ const comperssion = require('compression');
 const db = require('./lib/db');
 const topicRouter = require('./routes/topic');
 const indexRouter = require('./routes/index');
-const loginRouter = require('./routes/login');
+const authRouter = require('./routes/auth');
 const helmet = require('helmet');
 const cookie = require('cookie');
+var session = require('express-session');
+var FileStore = require('session-file-store')(session);
 var isowner = false;
 var cookies = {};
+
 
 app.use(helmet());
 
@@ -18,6 +21,15 @@ app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended:false}));
 
 app.use(comperssion());
+
+app.use(session({
+  httpOnly: true,
+  secure: true,
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  store : new FileStore()
+}));
 
 app.get('*', function(request, response, next){
   db.query(`SELECT * FROM topic`, function(error, topics){
@@ -40,7 +52,7 @@ app.get('*', function(request, response, next){
 
 app.use('/', indexRouter);
 
-app.use('/login', loginRouter);
+app.use('/auth', authRouter);
 
 app.use('/topic', topicRouter);
 

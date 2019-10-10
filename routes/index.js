@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const template = require('../lib/template');
+const auth = require('../lib/auth');
 
 // route, routing
 router.get('/', (request, response) => {
@@ -10,10 +11,9 @@ router.get('/', (request, response) => {
     var html = template.html(title, list,
         `<h2>${title}</h2>${description}`,
         `<a href="/topic/create">create</a>`,
-        request.authStatusUI
+        auth.statusUI(request, response)
     );
-    response.send(html);  
+    response.send(html);
 });
-
 
 module.exports = router;

@@ -1,7 +1,8 @@
-var db = require('../lib/db');
-var template = require('../lib/template');
-var sanitizeHTML = require('sanitize-html');
+const db = require('../lib/db');
+const template = require('../lib/template');
+const sanitizeHTML = require('sanitize-html');
 const express = require('express');
+const auth = require('../lib/auth');
 const router = express.Router();
 
 router.get('/create', (request, response) => {
@@ -24,7 +25,7 @@ router.get('/create', (request, response) => {
         </form>
       `,
       ``,
-      request.authStatusUI
+      auth.statusUI(request, response)
     );
     response.send(html);
   });        
@@ -32,8 +33,8 @@ router.get('/create', (request, response) => {
 
 router.post('/create_process', (request, response) => {
   var post = request.body;
-  if(!request.isOwner){
-    response.end('Login required!!');
+  if(!auth.isOwner(request, response)){
+    response.redirect(302, '/');
     return false;
   }
   db.query(`
@@ -51,8 +52,8 @@ router.post('/create_process', (request, response) => {
 
 router.post('/update_process', (request, response) => {
   var post = request.body;
-  if(!request.isOwner){
-    response.end('Login required!!');
+  if(!auth.isOwner(request, response)){
+    response.redirect(302, '/');
     return false;
   }
   db.query(`UPDATE topic SET title=?, description=?, author_id=? WHERE id = ?`, [post.title, post.description, post.author, post.id], function(error, result){
@@ -62,8 +63,8 @@ router.post('/update_process', (request, response) => {
 
 router.post('/delete_process', (request, response) => {
   var post = request.body;
-  if(!request.isOwner){
-    response.end('Login required!!');
+  if(!auth.isOwner(request, response)){
+    response.redirect(302, '/');
     return false;
   }
   db.query(`DELETE FROM topic WHERE id = ?`, post.id, function(error, result){
@@ -99,7 +100,7 @@ router.get('/update/:topicId', (request, response) => {
           </p>
         </form>`,
         `<a href="/create">create</a> <a href="/topic/update/${topic[0].id}">update</a>`,
-        request.authStatusUI
+        auth.statusUI(request, response)
       );
       response.send(html);
       });
@@ -127,7 +128,7 @@ router.get('/:pageId', (request, response) => {
         <input type ="hidden" name = "id" value="${request.params.pageId}">
         <input type="submit" value = "delete">
         </form>`,
-      request.authStatusUI
+      auth.statusUI(request, response)
     );
     response.send(html);
   });  
