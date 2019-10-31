@@ -2,7 +2,7 @@ module.exports = {
   apps : [{
     name: 'API',
     script: 'main.js',
-
+    ignore_watch : ["sessions"],
     // Options reference: https://pm2.io/doc/en/runtime/reference/ecosystem-file/
     args: 'one two',
     instances: 1,
@@ -14,8 +14,7 @@ module.exports = {
     },
     env_production: {
       NODE_ENV: 'production'
-    },
-    ignore_watch: ["data/*"]
+    }
   }],
 
   deploy : {

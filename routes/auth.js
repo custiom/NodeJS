@@ -27,21 +27,6 @@ router.get('/login', (request, response) => {
     response.send(html);  
 });
 
-router.post('/login_process', (request, response)=>{
-    var post = request.body;
-    if(post.email === authData.email && post.pwd === authData.password){
-        // success
-        request.session.is_logined = true;
-        request.session.nickname = authData.nickname;
-        request.session.save(() => {
-            response.redirect(302, `/`);
-        });
-    } else {
-        response.end('Who');
-    }
-    
-});
-
 router.get('/logout', (request, response)=>{
     request.session.destroy((err) => {
         response.redirect(302, `/`);
