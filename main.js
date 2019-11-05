@@ -5,13 +5,11 @@ const comperssion = require('compression');
 const db = require('./lib/db');
 const topicRouter = require('./routes/topic');
 const indexRouter = require('./routes/index');
-const authRouter = require('./routes/auth');
 const helmet = require('helmet');
 const cookie = require('cookie');
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
+const flash = require('connect-flash');
 var isowner = false;
 var cookies = {};
 
@@ -27,59 +25,22 @@ app.use(session({
   store : new FileStore()
 }));
 
+app.use(flash());
 
-//test email and password
-var authData = {
-  email:'egoing777@gmail.com',
-  password:'111111',
-  nickname:'egoing'
-}
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-passport.serializeUser(function(user, done) {
-  console.log('Serialize user called.', user);
-  done(null, user.email);
+app.get('/flash', function(req, res){
+  // Set a flash message by passing the key, followed by the value, to req.flash().
+  req.flash('msg', 'Flash is back!!');
+  res.send('flash');
+});
+ 
+app.get('/flash-display', function(req, res){
+  // Get an array of flash messages by passing the key to req.flash()
+  var fmsg = req.flash();
+  res.send(fmsg);
 });
 
-passport.deserializeUser(function(id, done) {
-  console.log('Deserialize user called.', id);
-  done(null, authData);
-});
-
-passport.use(new LocalStrategy(
-{
-  usernameField : 'email',
-  passwordField : 'pwd'
-},
-(username, password, done) => {
-  console.log('LocalStrategy', username, password);
-  if(username === authData.email){
-    console.log(1);
-    if(password === authData.password){
-      console.log(2);
-      done(null, authData);
-    } else {
-      console.log(3);
-      done(null, false, { message: 'Incorrect password.' });
-    }
-  } else {
-    console.log(4);
-    done(null, false, { message: 'Incorrect username.' });
-  }
-}));
-
-app.post('/auth/login_process',
-  passport.authenticate('local', {
-    successRedirect: '/',
-    failureRedirect: '/auth/login' 
-  }), (req, res, next) => {
-      req.session.is_Logined = true;
-      req.session.nickname = authData.nickname;
-      console.log(err);
-  }
-);
+const passport = require('./lib/passport')(app);
+const authRouter = require('./routes/auth')(passport);
 
 app.get('*', function(request, response, next){
   db.query(`SELECT * FROM topic`, function(error, topics){

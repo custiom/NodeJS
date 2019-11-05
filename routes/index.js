@@ -5,12 +5,18 @@ const auth = require('../lib/auth');
 
 // route, routing
 router.get('/', (request, response) => {
-    console.log('/', request.user);
+    var fmsg = request.flash();
+    var feedback = '';
+    if(fmsg.success){
+        feedback = fmsg.success[0];
+    }
+
     var title = 'Welcome';
     var description = 'Hello, Node.js';
     var list = template.list(request.list);
     var html = template.html(title, list,
-        `<h2>${title}</h2>${description}`,
+        `<div style="color:blue">${feedback}</div>
+         <h2>${title}</h2>${description}`,
         `<a href="/topic/create">create</a>`,
         auth.statusUI(request, response)
     );
