@@ -1,0 +1,36 @@
+{
+  "users": [
+    {
+      "id": "nZqs5Hbj",
+      "email": "egoing7777@gmail.com",
+      "password": "1111",
+      "displayName": "sungmin"
+    },
+    {
+      "id": "gD2X0539",
+      "email": "egoing77@gmail.com",
+      "password": "1111",
+      "displayName": "egoing"
+    },
+    {
+      "id": "vePR_0rK",
+      "email": "custiom@gmail.com",
+      "password": "$2b$10$UZuaTmQkxdAsOD./isyIk.rqeyPrwbKtZXSWDmkCePI8.VW3yZJjy",
+      "displayName": "Sungmin"
+    }
+  ],
+  "topics": [
+    {
+      "id": "I4YfbUgT",
+      "title": "Maria DB",
+      "description": "333322",
+      "user_id": "nZqs5Hbj"
+    },
+    {
+      "id": "Hgl5fz0P",
+      "title": "Nodejs",
+      "description": "11111",
+      "user_id": "nZqs5Hbj"
+    }
+  ]
+}

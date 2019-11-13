@@ -4,134 +4,158 @@ const sanitizeHTML = require('sanitize-html');
 const express = require('express');
 const auth = require('../lib/auth');
 const router = express.Router();
+const lowDB = require('../lib/lowdb');
+const shortid = require('shortid');
 
 router.get('/create', (request, response) => {
-  db.query(`SELECT * FROM author`, function(error2, authors){
-    var title = 'Create';
-    var list = template.list(request.list);
-    var html = template.html(sanitizeHTML(title), list,
-      `
-        <form action="/topic/create_process" method="post">
-          <p><input type="text" name="title" placeholder="title"></p>
-          <p>
-            <textarea name="description" placeholder="description"></textarea>
-          </p>
-          <p>
-            ${template.authorSelect(authors)}
-          </p>
-          <p>
-            <input type="submit">
-          </p>
-        </form>
-      `,
-      ``,
-      auth.statusUI(request, response)
-    );
-    response.send(html);
-  });        
+  
+  if(!auth.isOwner(request, response)){
+    request.flash('msg', 'please login your account');
+    response.redirect(302, '/');
+    return false;
+  }
+
+  var title = 'Create';
+  var list = template.list(request.list);
+  var html = template.html(sanitizeHTML(title), list,
+    `
+      <form action="/topic/create_process" method="post">
+        <p><input type="text" name="title" placeholder="title"></p>
+        <p>
+          <textarea name="description" placeholder="description"></textarea>
+        </p>
+        <p>
+          <input type="submit" value="submit">
+        </p>
+      </form>
+    `,
+    ``,
+    auth.statusUI(request, response)
+  );
+  response.send(html);
 });
 
 router.post('/create_process', (request, response) => {
-  var post = request.body;
   if(!auth.isOwner(request, response)){
     response.redirect(302, '/');
     return false;
   }
-  db.query(`
-      INSERT INTO topic (title, description, created, author_id)
-        VALUES(?, ?, NOW(), ?)`,
-      [post.title, post.description, post.author],
-      function(error, result){
-        if(error){
-          throw error;
-        }
-        response.redirect(302, `/topic/${result.insertId}`);
-      }
-  );    
+  
+  var id = shortid.generate();
+  var post = request.body;
+  var title = post.title;
+  var description = post.description;
+  var user_id = request.user.id;
+  
+  lowDB.get('topics').push({
+      id:id,
+      title:title,
+      description:description,
+      user_id:user_id
+  }).write();
+  response.redirect(302, `/topic/${id}`);
 });
 
 router.post('/update_process', (request, response) => {
-  var post = request.body;
+  
   if(!auth.isOwner(request, response)){
     response.redirect(302, '/');
     return false;
   }
-  db.query(`UPDATE topic SET title=?, description=?, author_id=? WHERE id = ?`, [post.title, post.description, post.author, post.id], function(error, result){
+  
+  var post = request.body;
+  
+  var topic = lowDB.get('topics').find({id:post.id}).value();
+  
+  if(topic.user_id !== request.user.id){
+    request.flash('msg', 'this topic is not mine');
     response.redirect(302, `/topic/${post.id}`);
-  });  
+    return;
+  }
+  
+  lowDB.get('topics').find({id:post.id}).assign({title:post.title, description:post.description}).write();
+  
+  response.redirect(302, `/topic/${post.id}`);
 });
 
 router.post('/delete_process', (request, response) => {
-  var post = request.body;
+  
   if(!auth.isOwner(request, response)){
     response.redirect(302, '/');
     return false;
   }
-  db.query(`DELETE FROM topic WHERE id = ?`, post.id, function(error, result){
-    if(error){
-      throw error;
-    }
-    response.redirect(302, `/`);
-  });  
+  
+  var post = request.body;
+  var topic = lowDB.get('topics').find({id:post.id}).value();
+  
+  if(topic.user_id !== request.user.id){
+    request.flash('msg', 'this topic is not mine');
+    response.redirect(302, `/topic/${post.id}`);
+    return false;
+  }
+  
+  lowDB.get('topics').remove({id:post.id}).write();
+  response.redirect(302, `/`);
+  
 });
 
 router.get('/update/:topicId', (request, response) => {
-  db.query(`SELECT * FROM topic WHERE id = ?`, [request.params.topicId], function(error2, topic){
-    if(error2){
-      throw error2;
-    }
-    db.query(`SELECT * FROM author`, function(error3, authors){
-      if(error3){
-        throw error3;
-      }
-      var list = template.list(request.list);
-      var html = template.html(sanitizeHTML(topic[0].title), list,
-        `<form action="/topic/update_process" method="post">
-          <input type="hidden" name="id" value="${topic[0].id}">
-          <p><input type="text" name="title" placeholder="title" value="${sanitizeHTML(topic[0].title)}"></p>
-          <p>
-            <textarea name="description" placeholder="description">${sanitizeHTML(topic[0].description)}</textarea>
-          </p>
-          <p>
-            ${template.authorSelect(authors, topic[0].author_id)}
-          </p>
-          <p>
-            <input type="submit">
-          </p>
-        </form>`,
-        `<a href="/create">create</a> <a href="/topic/update/${topic[0].id}">update</a>`,
-        auth.statusUI(request, response)
-      );
-      response.send(html);
-      });
-    });
+  var topic = lowDB.get('topics').find({id:request.params.topicId}).value();
+
+  if(topic.user_id !== request.user.id){
+    request.flash('msg', 'this topic is not mine');
+    response.redirect(302, `/topic/${topic.id}`);
+    return;
+  }
+    
+  var list = template.list(request.list);
+  var html = template.html(sanitizeHTML(topic.title), list,
+    `<form action="/topic/update_process" method="post">
+      <input type="hidden" name="id" value="${topic.id}">
+      <p><input type="text" name="title" placeholder="title" value="${sanitizeHTML(topic.title)}"></p>
+      <p>
+        <textarea name="description" placeholder="description">${sanitizeHTML(topic.description)}</textarea>
+      </p>
+      <p>
+        <input type="submit">
+      </p>
+    </form>`,
+    `<a href="/create">create</a> <a href="/topic/update/${topic.id}">update</a>`,
+    auth.statusUI(request, response)
+  );
+  
+  response.send(html);
 });
 
 router.get('/:pageId', (request, response) => {
-  db.query(`SELECT * FROM topic LEFT JOIN author ON topic.author_id = author.id WHERE topic.id = ?`, [request.params.pageId], function(error2, topic){
-    if(error2){
-      throw error;
-    }
-    var title = topic[0].title;
-    var description = topic[0].description;
-    var list = template.list(request.list);
-    var html = template.html(title, list,
-      `
-      <h2>${sanitizeHTML(title)}</h2>
-      ${sanitizeHTML(description)}
-      <img src="/images/hello.jpg" style="width:300px; display:block; margin-top:10px">
-      <p>by ${sanitizeHTML(topic[0].name)}</p>
-      `,
-      `<a href="/topic/create">create</a>
-        <a href="/topic/update/${request.params.pageId}">update</a>
-        <form action = "/topic/delete_process" method ="post">
-        <input type ="hidden" name = "id" value="${request.params.pageId}">
-        <input type="submit" value = "delete">
-        </form>`,
-      auth.statusUI(request, response)
-    );
-    response.send(html);
-  });  
+  var topic = lowDB.get('topics').find({id:request.params.pageId}).value();
+  
+  var user = lowDB.get('users').find({id:topic.user_id}).value();
+  var fmsg = request.flash();
+  var feedback ='';
+  if(fmsg.msg){
+    feedback = fmsg.msg[0];
+  }
+  var title = topic.title;
+  var description = topic.description;
+  var list = template.list(request.list);
+  var html = template.html(title, list,
+    `
+    <div style="color:red">${feedback}</div>
+    <h2>${sanitizeHTML(title)}</h2>
+    ${sanitizeHTML(description)}
+    <p>by ${user.displayName}<p>
+    `,
+    `<a href="/topic/create">create</a>
+      <a href="/topic/update/${topic.id}">update</a>
+      <form action = "/topic/delete_process" method ="post">
+      <input type ="hidden" name = "id" value="${topic.id}">
+      <input type="submit" value = "delete">
+      </form>`,
+    auth.statusUI(request, response)
+  );
+  response.send(html);
+  
 });
 
 module.exports = router;

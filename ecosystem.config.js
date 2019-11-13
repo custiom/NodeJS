@@ -2,7 +2,7 @@ module.exports = {
   apps : [{
     name: 'API',
     script: 'main.js',
-    ignore_watch : ["sessions"],
+    'ignore_watch' : ["sessions", "db.json"],
     // Options reference: https://pm2.io/doc/en/runtime/reference/ecosystem-file/
     args: 'one two',
     instances: 1,
